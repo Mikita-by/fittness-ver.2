@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1115">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>FitTrack — ИИ-помощник для похудения</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://js.puter.com/v2/"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">🌿</div>
+    <div>
+      <h1>FitTrack</h1>
+      <p>Твой ИИ-помощник</p>
+    </div>
+  </div>
+  <button id="settingsBtn" class="icon-btn" title="Настройки">⚙️</button>
+</header>
+
+<!-- Настройки -->
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Настройки профиля</h2>
+    <label>Ваше имя
+      <input type="text" id="userName" placeholder="Как к вам обращаться?">
+    </label>
+    <label>Рост (см)
+      <input type="number" id="userHeight" placeholder="170">
+    </label>
+    <label>Целевой вес (кг)
+      <input type="number" id="targetWeight" placeholder="65">
+    </label>
+    <div class="modal-actions">
+      <button id="closeSettings" class="btn-secondary">Отмена</button>
+      <button id="saveSettings" class="btn-primary">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="dashboard">
+    <span class="tab-icon">🏠</span>
+    <span class="tab-text">Обзор</span>
+  </button>
+  <button class="tab" data-tab="diary">
+    <span class="tab-icon">🍎</span>
+    <span class="tab-text">Дневник</span>
+  </button>
+  <button class="tab" data-tab="body">
+    <span class="tab-icon">📏</span>
+    <span class="tab-text">Тело</span>
+  </button>
+  <button class="tab" data-tab="progress">
+    <span class="tab-icon">📈</span>
+    <span class="tab-text">Прогресс</span>
+  </button>
+</nav>
+
+<main>
+  <!-- ====== ОБЗОР ====== -->
+  <section id="dashboard" class="tab-panel active">
+    <div class="hero-card">
+      <div class="hero-text">
+        <p class="hero-hi" id="greeting">Привет! 👋</p>
+        <h2 id="heroTitle">Начнём путь к цели</h2>
+        <p class="hero-sub" id="heroSub">Укажи свои данные в настройках</p>
+      </div>
+      <div class="hero-circle">
+        <div class="circle-inner">
+          <span class="circle-value" id="heroWeight">—</span>
+          <span class="circle-label">кг</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-value" id="statCalories">0</div>
+        <div class="stat-label">ккал сегодня</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⚖️</div>
+        <div class="stat-value" id="statBMI">—</div>
+        <div class="stat-label">ИМТ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-value" id="statRemaining">—</div>
+        <div class="stat-label">кг до цели</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🍽️</div>
+        <div class="stat-value" id="statMeals">0</div>
+        <div class="stat-label">приёмов пищи</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Последние приёмы пищи</h3>
+      <div id="recentMeals" class="recent-meals">
+        <p class="empty">Пока ничего не добавлено</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== ДНЕВНИК ====== -->
+  <section id="diary" class="tab-panel">
+    <div class="card">
+      <h3>Добавить приём пищи</h3>
+
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="fileInput" accept="image/*" hidden>
+        <div class="upload-placeholder" id="uploadPlaceholder">
+          <div class="upload-icon">📷</div>
+          <p>Нажмите, чтобы загрузить фото еды</p>
+          <small>ИИ распознает калории и БЖУ</small>
+        </div>
+        <img id="preview" class="hidden" alt="Превью">
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="mealName" placeholder="Название блюда">
+        <select id="mealType">
+          <option value="Завтрак">Завтрак</option>
+          <option value="Обед">Обед</option>
+          <option value="Ужин">Ужин</option>
+          <option value="Перекус">Перекус</option>
+        </select>
+      </div>
+
+      <div class="macro-grid">
+        <label>Ккал <input type="number" id="mCalories" placeholder="0"></label>
+        <label>Белки <input type="number" id="mProtein" placeholder="0"></label>
+        <label>Жиры <input type="number" id="mFat" placeholder="0"></label>
+        <label>Углеводы <input type="number" id="mCarbs" placeholder="0"></label>
+      </div>
+
+      <div class="btn-row">
+        <button id="analyzeBtn" class="btn-primary" disabled>🤖 Анализировать фото</button>
+        <button id="addMealBtn" class="btn-secondary">➕ Добавить вручную</button>
+      </div>
+      <div id="aiStatus" class="ai-status hidden"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>Дневник за сегодня</h3>
+        <span id="todayTotal" class="badge">0 ккал</span>
+      </div>
+      <div id="mealList" class="meal-list">
+        <p class="empty">Ещё нет записей</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== ТЕЛО ====== -->
+  <section id="body" class="tab-panel">
+    <div class="card">
+      <h3>Записать вес и объёмы</h3>
+      <p class="hint">Заполни хотя бы вес — объёмы опциональны</p>
+
+      <div class="macro-grid">
+        <label>Вес (кг) <input type="number" step="0.1" id="bWeight" placeholder="70.5"></label>
+        <label>Грудь (см) <input type="number" step="0.1" id="bChest" placeholder="—"></label>
+        <label>Талия (см) <input type="number" step="0.1" id="bWaist" placeholder="—"></label>
+        <label>Бёдра (см) <input type="number" step="0.1" id="bHips" placeholder="—"></label>
+        <label>Рука (см) <input type="number" step="0.1" id="bArm" placeholder="—"></label>
+        <label>Нога (см) <input type="number" step="0.1" id="bLeg" placeholder="—"></label>
+      </div>
+      <button id="saveBodyBtn" class="btn-primary full">💾 Сохранить запись</button>
+    </div>
+
+    <div class="card">
+      <h3>История измерений</h3>
+      <div id="bodyHistory" class="body-history">
+        <p class="empty">Нет данных</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== ПРОГРЕСС ====== -->
+  <section id="progress" class="tab-panel">
+    <div class="card">
+      <h3>Динамика веса</h3>
+      <canvas id="weightChart" height="180"></canvas>
+    </div>
+    <div class="card">
+      <h3>Калории за последние 7 дней</h3>
+      <canvas id="caloriesChart" height="180"></canvas>
+    </div>
+    <div class="card">
+      <h3>Изменение объёмов</h3>
+      <canvas id="measureChart" height="180"></canvas>
+    </div>
+  </section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
