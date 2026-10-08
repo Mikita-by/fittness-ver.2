@@ -7,7 +7,7 @@ const KEYS = {
 };
 
 const load = (k, def) => {
-  try { return JSON.parse(localStorage.getItem(k)) ?? def; }
+  try { const v = JSON.parse(localStorage.getItem(k)); return v ?? def; }
   catch { return def; }
 };
 const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
@@ -40,9 +40,8 @@ function applyTheme(theme) {
     ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
     : theme;
   document.documentElement.setAttribute('data-theme', t);
-  document.querySelector('meta[name="theme-color"]').setAttribute('content',
-    t === 'light' ? '#f5f7fa' : t === 'pink' ? '#1a1218' : '#0f1115');
-  if (state.settings.theme) save(KEYS.settings, state.settings);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t === 'light' ? '#f5f7fa' : t === 'pink' ? '#1a1218' : '#0f1115');
 }
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (state.settings.theme === 'auto') applyTheme('auto');
@@ -64,9 +63,11 @@ document.querySelectorAll('.tab').forEach(tab => {
 // ==================== МОДАЛКИ ====================
 document.querySelectorAll('.modal-close, [data-close]').forEach(btn => {
   btn.addEventListener('click', () => {
-    const id = btn.dataset.close || btn.closest('.modal').id;
-    $(id).classList.add('hidden');
-    if (id === 'scannerModal') stopScanner();
+    const id = btn.dataset.close || btn.closest('.modal')?.id;
+    if (id) {
+      $(id).classList.add('hidden');
+      if (id === 'scannerModal') stopScanner();
+    }
   });
 });
 document.querySelectorAll('.modal').forEach(m => {
@@ -81,6 +82,7 @@ document.querySelectorAll('.modal').forEach(m => {
 // ==================== ОНБОРДИНГ ====================
 let obSlide = 1;
 const TOTAL_SLIDES = 5;
+
 function showOnboarding() {
   $('onboarding').classList.remove('hidden');
   obSlide = 1;
@@ -100,6 +102,7 @@ $('onboardingNext').addEventListener('click', () => {
   else finishOnboarding();
 });
 $('onboardingSkip').addEventListener('click', finishOnboarding);
+
 function finishOnboarding() {
   $('onboarding').classList.add('hidden');
   state.settings.onboarded = true;
@@ -111,6 +114,7 @@ document.querySelectorAll('.theme-option').forEach(btn => {
     document.querySelectorAll('.theme-option').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     state.settings.theme = btn.dataset.themeChoice;
+    save(KEYS.settings, state.settings);
     applyTheme(btn.dataset.themeChoice);
   });
 });
@@ -143,11 +147,18 @@ $('openSettings2').addEventListener('click', openSettings);
 $('closeSettings').addEventListener('click', () => $('settingsModal').classList.add('hidden'));
 
 ['userAge','userSex','userHeight','userWeight','userActivity','userGoal'].forEach(id => {
-  $(id).addEventListener('input', updateAutoNormsPreview);
-  $(id).addEventListener('change', updateAutoNormsPreview);
+  const el = $(id);
+  if (el) {
+    el.addEventListener('input', updateAutoNormsPreview);
+    el.addEventListener('change', updateAutoNormsPreview);
+  }
 });
 $('manualNorms').addEventListener('change', toggleManualBlock);
-$('themeSelect').addEventListener('change', (e) => applyTheme(e.target.value));
+$('themeSelect').addEventListener('change', (e) => {
+  state.settings.theme = e.target.value;
+  save(KEYS.settings, state.settings);
+  applyTheme(e.target.value);
+});
 
 function toggleManualBlock() {
   const on = $('manualNorms').checked;
@@ -295,8 +306,8 @@ $('shareBtn').addEventListener('click', async () => {
   if (navigator.share) {
     try { await navigator.share({ title: 'FitTrack', text }); } catch {}
   } else {
-    await navigator.clipboard.writeText(text);
-    alert('Прогресс скопирован в буфер обмена!');
+    try { await navigator.clipboard.writeText(text); alert('Прогресс скопирован!'); }
+    catch { prompt('Скопируйте:', text); }
   }
 });
 
@@ -322,15 +333,14 @@ function renderWater() {
   const fill = $('waterBarFill');
   fill.style.width = pct + '%';
   fill.classList.toggle('over', cur > norm);
-
   const glasses = Math.floor(cur / 250);
-  const glassesEl = $('waterGlasses');
-  glassesEl.innerHTML = '';
+  const el = $('waterGlasses');
+  el.innerHTML = '';
   for (let i = 0; i < Math.min(glasses, 20); i++) {
     const span = document.createElement('span');
     span.className = 'water-glass';
     span.textContent = '💧';
-    glassesEl.appendChild(span);
+    el.appendChild(span);
   }
 }
 
@@ -338,7 +348,6 @@ function renderWater() {
 function updateStreak() {
   const mealsByDay = new Set(state.meals.map(m => m.date.slice(0, 10)));
   if (!mealsByDay.has(today())) {
-    // Сегодня ещё нет записей — проверяем, активен ли стрик
     const last = state.streak.lastDate;
     if (last) {
       const diff = Math.floor((new Date(today()) - new Date(last)) / 86400000);
@@ -351,10 +360,8 @@ function updateStreak() {
   }
   const last = state.streak.lastDate;
   if (last === today()) return;
-
-  if (!last) {
-    state.streak.current = 1;
-  } else {
+  if (!last) state.streak.current = 1;
+  else {
     const diff = Math.floor((new Date(today()) - new Date(last)) / 86400000);
     state.streak.current = diff === 1 ? state.streak.current + 1 : 1;
   }
@@ -389,7 +396,8 @@ const ACHIEVEMENTS = [
   { id: 'weight_lost_1', emoji: '📉', name: '-1 кг', cond: () => getLost() >= 1 },
   { id: 'weight_lost_5', emoji: '🎉', name: '-5 кг', cond: () => getLost() >= 5 },
   { id: 'goal_reached', emoji: '🎯', name: 'Цель достигнута', cond: () => {
-    const w = state.body[0]?.weight; return w && state.settings.target && w <= state.settings.target;
+    const w = state.body[0]?.weight;
+    return w && state.settings.target && w <= state.settings.target;
   }},
   { id: 'photo_ai', emoji: '📷', name: 'Фото-анализ', cond: () => state.meals.some(m => m.image) }
 ];
@@ -420,29 +428,21 @@ function checkAchievements() {
 
 function showAchievementToast(a) {
   const toast = document.createElement('div');
-  toast.className = 'achievement-toast';
-  toast.innerHTML = `<div class="achievement-toast-emoji">${a.emoji}</div><div class="achievement-toast-text"><strong>Достижение!</strong><span>${a.name}</span></div>`;
   toast.style.cssText = `
     position:fixed;top:20px;left:50%;transform:translateX(-50%);
     background:var(--gradient);color:#0f1115;padding:14px 20px;border-radius:14px;
     display:flex;align-items:center;gap:12px;z-index:9999;
     box-shadow:0 8px 30px rgba(110,231,183,0.4);
-    animation:slideDown 0.4s,slideUp 0.4s 3s forwards;font-weight:600;max-width:90vw;
+    font-weight:600;max-width:90vw;
   `;
-  const emoji = toast.querySelector('.achievement-toast-emoji');
-  emoji.style.fontSize = '28px';
-  const text = toast.querySelector('.achievement-toast-text');
-  text.style.display = 'flex';
-  text.style.flexDirection = 'column';
-  text.style.lineHeight = '1.2';
-  toast.querySelector('strong').style.fontSize = '0.85rem';
-  toast.querySelector('span').style.fontSize = '0.75rem';
+  toast.innerHTML = `<span style="font-size:28px">${a.emoji}</span><span style="display:flex;flex-direction:column;line-height:1.2"><strong style="font-size:0.85rem">Достижение!</strong><span style="font-size:0.75rem">${a.name}</span></span>`;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3500);
 }
 
 function renderAchievements() {
   const grid = $('achievementsGrid');
+  if (!grid) return;
   grid.innerHTML = ACHIEVEMENTS.map(a => {
     const unlocked = state.achievements.includes(a.id);
     return `<div class="achievement ${unlocked ? 'unlocked' : ''}" title="${a.name}">
@@ -464,11 +464,10 @@ const LEVELS = [
 ];
 
 function getXP() {
-  const mealsXP = state.meals.length * 5;
-  const weightXP = state.body.length * 10;
-  const achXP = state.achievements.length * 25;
-  const streakXP = (state.streak.best || 0) * 10;
-  return mealsXP + weightXP + achXP + streakXP;
+  return state.meals.length * 5
+    + state.body.length * 10
+    + state.achievements.length * 25
+    + (state.streak.best || 0) * 10;
 }
 
 function renderLevel() {
@@ -487,9 +486,7 @@ function renderLevel() {
   const inLvlXP = xp - lvl.xp;
   const pct = next === lvl ? 100 : Math.min(100, (inLvlXP / rangeXP) * 100);
   $('levelBar').style.width = pct + '%';
-  $('levelSub').textContent = next === lvl
-    ? `${xp} XP — максимум!`
-    : `${inLvlXP} / ${rangeXP} XP`;
+  $('levelSub').textContent = next === lvl ? `${xp} XP — максимум!` : `${inLvlXP} / ${rangeXP} XP`;
 }
 
 // ==================== ДНЕВНИК ====================
@@ -506,11 +503,21 @@ fileInput.addEventListener('change', (e) => {
     $('preview').src = ev.target.result;
     $('preview').classList.remove('hidden');
     $('uploadPlaceholder').classList.add('hidden');
-    $('analyzeBtn').disabled = false;
+    updateAnalyzeBtn();
     $('aiStatus').classList.add('hidden');
   };
   reader.readAsDataURL(file);
 });
+
+// ✅ Активация кнопки при вводе названия или загрузке фото
+function updateAnalyzeBtn() {
+  const hasName = $('mealName').value.trim().length > 0;
+  const hasImage = !!state.currentImage;
+  $('analyzeBtn').disabled = !(hasName || hasImage);
+}
+
+$('mealName').addEventListener('input', updateAnalyzeBtn);
+updateAnalyzeBtn();
 
 function showAIStatus(text, cls) {
   $('aiStatus').textContent = text;
@@ -521,15 +528,18 @@ function showAIStatus(text, cls) {
 function extractJSON(text) {
   const first = text.indexOf('{');
   const last = text.lastIndexOf('}');
-  if (first === -1 || last === -1) throw new Error('Неверный формат ответа');
+  if (first === -1 || last === -1) throw new Error('Неверный формат ответа ИИ');
   return JSON.parse(text.slice(first, last + 1));
 }
 
 async function askPuter(prompt, image = null) {
-  if (typeof puter === 'undefined' || !puter.ai) throw new Error('ИИ-модуль не загружен');
+  if (typeof puter === 'undefined' || !puter.ai) {
+    throw new Error('ИИ-модуль не загружен. Проверьте интернет.');
+  }
   const args = [prompt];
   if (image) args.push(image);
-  args.push({ model: 'google/gemini-3.8-flash' });
+  args.push({ model: 'gpt-5-nano' });
+
   const response = await puter.ai.chat(...args);
   let text = '';
   if (typeof response === 'string') text = response;
@@ -544,19 +554,30 @@ async function askPuter(prompt, image = null) {
 $('analyzeBtn').addEventListener('click', async () => {
   const name = $('mealName').value.trim();
   const grams = +$('portion').value || null;
-  if (!state.currentImage && !name) { showAIStatus('Загрузите фото или введите название', 'error'); return; }
-  if (typeof puter === 'undefined' || !puter.ai) { showAIStatus('❌ ИИ-модуль не загрузился', 'error'); return; }
 
-  showAIStatus(`🤖 Анализируем ${state.currentImage ? 'фото' : '«' + name + '»'}...`, 'loading');
+  if (!state.currentImage && !name) {
+    showAIStatus('⚠️ Загрузите фото или введите название блюда', 'error');
+    return;
+  }
+  if (typeof puter === 'undefined' || !puter.ai) {
+    showAIStatus('❌ ИИ-модуль не загрузился. Проверьте интернет и обновите страницу.', 'error');
+    return;
+  }
+
+  showAIStatus(`🤖 Анализируем ${state.currentImage ? 'фото' : '«' + name + '»'}${grams ? ` (порция ${grams} г)` : ''}...`, 'loading');
   $('analyzeBtn').disabled = true;
 
   try {
-    const portionLine = grams ? `Порция: ${grams} грамм. Рассчитай КБЖУ именно для этого количества.` : 'Если порция не указана, используй стандартную порцию 150-200 г.';
-    const prompt = `Ты — нутрициолог. ${state.currentImage ? 'Проанализируй фото еды.' : `Пользователь указал: "${name}".`}
+    const portionLine = grams
+      ? `Порция: ${grams} грамм. Рассчитай КБЖУ именно для этого количества.`
+      : 'Если порция не указана, используй стандартную порцию 150-200 г и укажи её в названии.';
+
+    const prompt = `Ты — нутрициолог. ${state.currentImage ? 'Проанализируй фото еды.' : `Пользователь указал блюдо: "${name}".`}
 ${portionLine}
 Верни ТОЛЬКО валидный JSON без markdown:
 {"dish_name":"название с граммовкой","calories":250,"proteins":10,"fats":8,"carbs":30}
 Все числа целые. Если не распознал — нули.`;
+
     const text = await askPuter(prompt, state.currentImage);
     const data = extractJSON(text);
 
@@ -565,9 +586,13 @@ ${portionLine}
     $('mProtein').value = Math.round(data.proteins) || '';
     $('mFat').value = Math.round(data.fats) || '';
     $('mCarbs').value = Math.round(data.carbs) || '';
+
     showAIStatus(`✅ ${data.dish_name || ''} — ${Math.round(data.calories) || 0} ккал. Проверьте и нажмите «Добавить без ИИ».`, '');
+    updateAnalyzeBtn();
   } catch (err) {
-    showAIStatus('❌ Ошибка: ' + (err.message || 'неизвестная'), 'error');
+    console.error('AI error:', err);
+    const msg = err?.message || err?.error?.message || JSON.stringify(err) || 'неизвестная';
+    showAIStatus('❌ Ошибка: ' + msg, 'error');
   } finally {
     $('analyzeBtn').disabled = false;
   }
@@ -581,7 +606,6 @@ $('addMealBtn').addEventListener('click', () => {
   const protein = +$('mProtein').value || 0;
   const fat = +$('mFat').value || 0;
   const carbs = +$('mCarbs').value || 0;
-  const steps = +$('stepsInput').value || 0;
 
   if (!calories && !protein && !fat && !carbs && !state.currentImage) {
     showAIStatus('Заполните хотя бы калории или загрузите фото', 'error');
@@ -595,26 +619,20 @@ $('addMealBtn').addEventListener('click', () => {
   state.meals.unshift(meal);
   save(KEYS.meals, state.meals);
 
-  if (steps > 0) {
-    state.steps[today()] = steps;
-    save(KEYS.steps, state.steps);
-  }
-
-  // Сброс
+  // Сброс формы
   $('mealName').value = '';
   $('mCalories').value = '';
   $('mProtein').value = '';
   $('mFat').value = '';
   $('mCarbs').value = '';
   $('portion').value = '';
-  $('stepsInput').value = '';
   state.currentImage = null;
   $('preview').src = '';
   $('preview').classList.add('hidden');
   $('uploadPlaceholder').classList.remove('hidden');
-  $('analyzeBtn').disabled = true;
   fileInput.value = '';
   $('aiStatus').classList.add('hidden');
+  updateAnalyzeBtn();
 
   updateStreak();
   renderAll();
@@ -669,7 +687,7 @@ async function showAIFeedback(meal) {
 Ккал: ${meal.calories}, Б: ${meal.protein}г, Ж: ${meal.fat}г, У: ${meal.carbs}г.
 Дай КОРОТКИЙ отзыв (1-2 предложения) и один совет (1 предложение).
 Ответь ТОЛЬКО JSON без markdown:
-{"emoji":"подходящий эмодзи","title":"короткий заголовок (3-5 слов)","text":"отзыв одним предложением","tip":"совет одним предложением"}`;
+{"emoji":"подходящий эмодзи","title":"короткий заголовок","text":"отзыв одним предложением","tip":"совет одним предложением"}`;
     const text = await askPuter(prompt);
     const data = extractJSON(text);
     $('feedbackContent').innerHTML = `
@@ -714,6 +732,7 @@ function deleteBodyEntry(id) {
 
 function renderBodyHistory() {
   const c = $('bodyHistory');
+  if (!c) return;
   if (!state.body.length) { c.innerHTML = '<p class="empty">Нет данных</p>'; return; }
   c.innerHTML = state.body.map(b => {
     const m = [];
@@ -746,7 +765,9 @@ function renderDashboard() {
 
   const lastBody = state.body[0];
   const weight = lastBody?.weight || state.settings.weight || null;
-  const bmi = weight && state.settings.height ? (weight / Math.pow(state.settings.height / 100, 2)).toFixed(1) : null;
+  const bmi = weight && state.settings.height
+    ? (weight / Math.pow(state.settings.height / 100, 2)).toFixed(1)
+    : null;
   const norms = getNorms();
 
   const hour = new Date().getHours();
@@ -766,7 +787,6 @@ function renderDashboard() {
     $('heroSub').textContent = 'Добавьте первую запись веса';
   }
 
-  // Кольцо калорий
   const RING = 314;
   $('ringValue').textContent = Math.round(totals.calories);
   if (norms && norms.calories) {
@@ -776,9 +796,19 @@ function renderDashboard() {
     $('calorieNormLabel').textContent = `Норма: ${Math.round(norms.calories)} ккал`;
     const left = Math.round(norms.calories - totals.calories);
     const el = $('calorieLeftLabel');
-    if (left > 50) { el.textContent = `Осталось ${left} ккал`; el.className = 'calorie-left'; $('calorieSubLabel').textContent = 'Можно ещё поесть 😊'; }
-    else if (left > -50) { el.textContent = '🎯 В норме!'; el.className = 'calorie-left ok'; $('calorieSubLabel').textContent = 'Отличная работа сегодня!'; }
-    else { el.textContent = `Перебор ${Math.abs(left)} ккал`; el.className = 'calorie-left over'; $('calorieSubLabel').textContent = 'Завтра сбалансируйте'; }
+    if (left > 50) {
+      el.textContent = `Осталось ${left} ккал`;
+      el.className = 'calorie-left';
+      $('calorieSubLabel').textContent = 'Можно ещё поесть 😊';
+    } else if (left > -50) {
+      el.textContent = '🎯 В норме!';
+      el.className = 'calorie-left ok';
+      $('calorieSubLabel').textContent = 'Отличная работа сегодня!';
+    } else {
+      el.textContent = `Перебор ${Math.abs(left)} ккал`;
+      el.className = 'calorie-left over';
+      $('calorieSubLabel').textContent = 'Завтра сбалансируйте';
+    }
   } else {
     $('calorieRing').setAttribute('stroke-dashoffset', String(RING));
     $('calorieNormLabel').textContent = 'Норма: —';
@@ -787,13 +817,13 @@ function renderDashboard() {
     $('calorieSubLabel').textContent = 'Заполните профиль';
   }
 
-  // Статистика
   $('statBMI').textContent = bmi || '—';
   $('statCalories').textContent = Math.round(totals.calories);
   $('statMeals').textContent = meals.length;
-  $('statRemaining').textContent = (state.settings.target && weight) ? (weight - state.settings.target).toFixed(1) : '—';
+  $('statRemaining').textContent = (state.settings.target && weight)
+    ? (weight - state.settings.target).toFixed(1)
+    : '—';
 
-  // Макросы
   updateMacro('protein', totals.protein, norms?.protein);
   updateMacro('fat', totals.fat, norms?.fat);
   updateMacro('carbs', totals.carbs, norms?.carbs);
@@ -865,11 +895,14 @@ function renderRecommendation(totals, norms) {
 
   if (left.protein > 20) items.push({ icon: '🥩', text: `Добрать <strong>${left.protein} г белка</strong>: курица, рыба, творог.` });
   else if (left.protein > 5) items.push({ icon: '🥩', text: `Ещё <strong>${left.protein} г белка</strong> — 100 г творога.` });
+
   if (left.fat > 15) items.push({ icon: '🥑', text: `Добрать <strong>${left.fat} г жиров</strong>: орехи, авокадо.` });
   else if (left.fat > 5) items.push({ icon: '🥑', text: `Ещё <strong>${left.fat} г жиров</strong> — горсть орехов.` });
   else if (left.fat < -15) items.push({ icon: '⚠️', text: `Много жиров (${Math.abs(left.fat)} г). Уменьшите.` });
+
   if (left.carbs > 40) items.push({ icon: '🍞', text: `Добрать <strong>${left.carbs} г углеводов</strong>: крупы, овощи.` });
   else if (left.carbs > 15) items.push({ icon: '🍞', text: `Ещё <strong>${left.carbs} г углеводов</strong> — яблоко.` });
+
   if (!items.length) items.push({ icon: '✅', text: 'Всё в норме — вы молодец!' });
   box.innerHTML = items.map(i => `<div class="rec-item"><span class="rec-icon">${i.icon}</span><span class="rec-text">${i.text}</span></div>`).join('');
 }
@@ -877,13 +910,9 @@ function renderRecommendation(totals, norms) {
 // ==================== МИССИЯ ДНЯ ====================
 function renderMission() {
   const m = state.mission;
-  if (m.date === today() && m.text) {
-    $('missionText').textContent = m.text;
-  } else if (!m.text) {
-    $('missionText').textContent = 'Нажмите 🔄, чтобы получить миссию от ИИ';
-  } else {
-    $('missionText').textContent = 'Нажмите 🔄, чтобы получить миссию на сегодня';
-  }
+  if (m.date === today() && m.text) $('missionText').textContent = m.text;
+  else if (!m.text) $('missionText').textContent = 'Нажмите 🔄, чтобы получить миссию от ИИ';
+  else $('missionText').textContent = 'Нажмите 🔄, чтобы получить миссию на сегодня';
 }
 
 $('missionRefresh').addEventListener('click', async () => {
@@ -896,15 +925,16 @@ $('missionRefresh').addEventListener('click', async () => {
     const context = `Пользователь: ${state.settings.name || 'без имени'}.
 Цель: ${state.settings.goal || 'похудение'}. Вес: ${weight} кг.
 Норма: ${norms ? Math.round(norms.calories) + ' ккал' : 'не задана'}.
-Дай одну конкретную миссию на сегодня (1 предложение, максимум 15 слов, мотивирующую, измеримую). 
+Дай одну конкретную миссию на сегодня (1 предложение, максимум 15 слов, мотивирующую, измеримую).
 Например: «Выпей 2 литра воды и добавь 150 г овощей к обеду».
 Только текст миссии, без кавычек и пояснений.`;
     const text = await askPuter(context);
-    const clean = text.trim().replace(/^["«]|["»]$/g, '').slice(0, 200);
+    const clean = String(text).trim().replace(/^["«]|["»]$/g, '').slice(0, 200);
     state.mission = { date: today(), text: clean };
     save(KEYS.mission, state.mission);
     $('missionText').textContent = clean;
-  } catch {
+  } catch (e) {
+    console.error(e);
     $('missionText').textContent = 'Не удалось получить миссию. Попробуйте ещё раз.';
   } finally {
     btn.classList.remove('loading');
@@ -925,7 +955,7 @@ async function startScanner() {
   }
   try {
     codeReader = new ZXing.BrowserMultiFormatReader();
-    codeReader.decodeFromVideoDevice(null, 'scannerVideo', (result, err) => {
+    codeReader.decodeFromVideoDevice(null, 'scannerVideo', (result) => {
       if (result) {
         handleBarcode(result.text);
         stopScanner();
@@ -948,7 +978,7 @@ async function handleBarcode(code) {
     const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
     const data = await res.json();
     if (data.status !== 1) {
-      $('scannerResult').innerHTML = `❌ Продукт с кодом ${code} не найден в базе`;
+      $('scannerResult').innerHTML = `❌ Продукт с кодом ${code} не найден`;
       return;
     }
     const p = data.product;
@@ -976,11 +1006,12 @@ async function handleBarcode(code) {
         $('mFat').value = fat;
         $('mCarbs').value = carbs;
         $('scannerModal').classList.add('hidden');
-        document.querySelector('.tab[data-tab="diary"]').click();
+        document.querySelector('.tab[data-tab="diary"]')?.click();
+        updateAnalyzeBtn();
       });
     }, 50);
   } catch (e) {
-    $('scannerResult').innerHTML = '❌ Ошибка запроса: ' + e.message;
+    $('scannerResult').innerHTML = '❌ Ошибка: ' + e.message;
   }
 }
 
@@ -1085,7 +1116,6 @@ function startFastingTick() {
   stopFastingTick();
   fastingInterval = setInterval(renderFasting, 1000);
 }
-
 function stopFastingTick() {
   if (fastingInterval) clearInterval(fastingInterval);
   fastingInterval = null;
@@ -1123,9 +1153,8 @@ function renderFasting() {
     $('fastingRing').setAttribute('stroke-dashoffset', '0');
   } else {
     $('fastingLabel').textContent = `Осталось ${Math.floor(remaining / 3600000)}ч ${Math.floor((remaining % 3600000) / 60000)}м`;
-    const RING = 314;
     const pct = elapsed / totalMs;
-    $('fastingRing').setAttribute('stroke-dashoffset', String(RING * (1 - pct)));
+    $('fastingRing').setAttribute('stroke-dashoffset', String(314 * (1 - pct)));
   }
   $('fastingToggle').textContent = '⏸ Остановить';
   $('fastingReset').classList.remove('hidden');
@@ -1202,7 +1231,7 @@ async function sendCoachMessage() {
     const history = state.coach.slice(-8).map(m => `${m.role === 'user' ? 'Пользователь' : 'Тренер'}: ${m.text}`).join('\n');
     const fullPrompt = `${context}\n\nИстория диалога:\n${history}\n\nОтветь на последнее сообщение пользователя.`;
     const reply = await askPuter(fullPrompt);
-    const clean = (typeof reply === 'string' ? reply : String(reply)).trim();
+    const clean = String(reply).trim();
 
     state.coach.push({ role: 'bot', text: clean });
     save(KEYS.coach, state.coach);
@@ -1233,27 +1262,21 @@ document.querySelectorAll('.challenge-chip').forEach(chip => {
 function renderChallenges() {
   const c = state.challenges;
   const box = $('activeChallenge');
+  if (!box) return;
   document.querySelectorAll('.challenge-chip').forEach(chip => {
     chip.classList.toggle('active', +chip.dataset.days === c.active);
   });
-
-  if (!c.active || !c.start) {
-    box.classList.add('hidden');
-    return;
-  }
-
+  if (!c.active || !c.start) { box.classList.add('hidden'); return; }
   const startDate = new Date(c.start);
   const elapsed = Math.floor((Date.now() - startDate.getTime()) / 86400000) + 1;
   const pct = Math.min(100, (elapsed / c.active) * 100);
   const done = elapsed >= c.active;
-
   box.innerHTML = `
     <div class="ch-progress">
       <span>День <span class="ch-days">${Math.min(elapsed, c.active)}</span> из ${c.active}</span>
       <span>${done ? '🎉 Завершён!' : 'Осталось ' + (c.active - elapsed) + ' дн.'}</span>
     </div>
     <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
-    ${done ? '<p class="hint" style="margin-top:10px">Поздравляем с завершением челленджа! Начните новый или отдохните.</p>' : ''}
   `;
   box.classList.remove('hidden');
 }
@@ -1271,7 +1294,6 @@ function renderCharts() {
   };
   const bodySorted = [...state.body].reverse();
 
-  // Вес
   if (state.charts.weight) state.charts.weight.destroy();
   state.charts.weight = new Chart($('weightChart'), {
     type: 'line',
@@ -1288,7 +1310,6 @@ function renderCharts() {
     options: opts
   });
 
-  // Калории за 7 дней
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
@@ -1304,7 +1325,6 @@ function renderCharts() {
     options: opts
   });
 
-  // Объёмы
   const withMeasures = bodySorted.filter(b => b.waist || b.hips || b.chest);
   if (state.charts.measure) state.charts.measure.destroy();
   state.charts.measure = new Chart($('measureChart'), {
@@ -1343,17 +1363,15 @@ function checkNotifications() {
   if (!state.settings.notifications) return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const h = new Date().getHours();
-  const m = new Date().getMinutes();
   const lastNotif = +localStorage.getItem('ft_last_notif') || 0;
   const now = Date.now();
-  if (now - lastNotif < 3600000) return; // не чаще раза в час
-
+  if (now - lastNotif < 3600000) return;
   const day = today();
   const water = getTodayWater();
   const norm = state.settings.waterNorm || 2000;
 
   if (h >= 14 && water < norm * 0.5) {
-    new Notification('💧 Пора пить воду', { body: `Выпито ${water} мл из ${norm} мл. Добавьте стакан воды!` });
+    new Notification('💧 Пора пить воду', { body: `Выпито ${water} мл из ${norm} мл.` });
     localStorage.setItem('ft_last_notif', String(now));
   } else if (h >= 20 && !state.meals.some(m => m.date.slice(0, 10) === day)) {
     new Notification('🍽️ Не забудьте про дневник', { body: 'Сегодня ещё нет записей о еде.' });
@@ -1362,7 +1380,7 @@ function checkNotifications() {
 }
 setInterval(checkNotifications, 600000);
 
-// ==================== РЕНДЕР ВСЕГО ====================
+// ==================== ОБЩИЙ РЕНДЕР ====================
 function renderAll() {
   renderDashboard();
   renderMeals();
@@ -1388,7 +1406,6 @@ window.deleteRecipe = deleteRecipe;
     setTimeout(showOnboarding, 300);
   }
 
-  // PWA
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
