@@ -20,7 +20,7 @@
 </head>
 <body>
 
-<!-- ========== TOPBAR ========== -->
+<!-- TOPBAR -->
 <header class="topbar">
   <div class="brand">
     <div class="logo">🌿</div>
@@ -35,7 +35,7 @@
   </div>
 </header>
 
-<!-- ========== ОНБОРДИНГ ========== -->
+<!-- ОНБОРДИНГ -->
 <div id="onboarding" class="onboarding hidden">
   <div class="onboarding-content">
     <div class="onboarding-slide active" data-slide="1">
@@ -59,16 +59,13 @@
       <p>Можно поменять в любой момент в настройках.</p>
       <div class="theme-picker">
         <button class="theme-option active" data-theme-choice="dark">
-          <span class="theme-swatch theme-swatch-dark"></span>
-          <span>Тёмная</span>
+          <span class="theme-swatch theme-swatch-dark"></span><span>Тёмная</span>
         </button>
         <button class="theme-option" data-theme-choice="light">
-          <span class="theme-swatch theme-swatch-light"></span>
-          <span>Светлая</span>
+          <span class="theme-swatch theme-swatch-light"></span><span>Светлая</span>
         </button>
         <button class="theme-option" data-theme-choice="pink">
-          <span class="theme-swatch theme-swatch-pink"></span>
-          <span>Розовая</span>
+          <span class="theme-swatch theme-swatch-pink"></span><span>Розовая</span>
         </button>
       </div>
     </div>
@@ -78,18 +75,14 @@
       <p>Сейчас заполним короткий профиль — это займёт меньше минуты.</p>
     </div>
     <div class="onboarding-dots">
-      <span class="dot active"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
+      <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
     </div>
     <button id="onboardingNext" class="btn-primary full">Далее</button>
     <button id="onboardingSkip" class="onboarding-skip">Пропустить</button>
   </div>
 </div>
 
-<!-- ========== НАСТРОЙКИ ========== -->
+<!-- НАСТРОЙКИ -->
 <div id="settingsModal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
@@ -97,78 +90,49 @@
       <button class="modal-close" data-close="settingsModal">✕</button>
     </div>
     <div class="modal-body">
-      <label>Ваше имя
-        <input type="text" id="userName" placeholder="Никита">
-      </label>
+      <label>Ваше имя<input type="text" id="userName" placeholder="Никита"></label>
       <div class="settings-row">
-        <label>Возраст
-          <input type="number" id="userAge" placeholder="25" inputmode="numeric">
-        </label>
-        <label>Пол
-          <select id="userSex">
-            <option value="male">Мужской</option>
-            <option value="female">Женский</option>
-          </select>
-        </label>
+        <label>Возраст<input type="number" id="userAge" placeholder="25" inputmode="numeric"></label>
+        <label>Пол<select id="userSex"><option value="male">Мужской</option><option value="female">Женский</option></select></label>
       </div>
       <div class="settings-row">
-        <label>Рост (см)
-          <input type="number" id="userHeight" placeholder="175" inputmode="numeric">
-        </label>
-        <label>Вес (кг)
-          <input type="number" id="userWeight" placeholder="75" inputmode="decimal">
-        </label>
+        <label>Рост (см)<input type="number" id="userHeight" placeholder="175" inputmode="numeric"></label>
+        <label>Вес (кг)<input type="number" id="userWeight" placeholder="75" inputmode="decimal"></label>
       </div>
       <div class="settings-row">
-        <label>Целевой вес (кг)
-          <input type="number" id="targetWeight" placeholder="70" inputmode="decimal">
-        </label>
-        <label>Норма воды (мл)
-          <input type="number" id="waterNorm" placeholder="2000" inputmode="numeric">
-        </label>
+        <label>Целевой вес (кг)<input type="number" id="targetWeight" placeholder="70" inputmode="decimal"></label>
+        <label>Норма воды (мл)<input type="number" id="waterNorm" placeholder="2000" inputmode="numeric"></label>
       </div>
-      <label>Активность
-        <select id="userActivity">
-          <option value="1.2">Минимальная (сижу, мало хожу)</option>
-          <option value="1.375">Лёгкая (1–3 тренировки/нед)</option>
-          <option value="1.55" selected>Средняя (3–5 тренировок/нед)</option>
-          <option value="1.725">Высокая (6–7 тренировок/нед)</option>
-          <option value="1.9">Очень высокая (спортсмен)</option>
-        </select>
-      </label>
-      <label>Цель
-        <select id="userGoal">
-          <option value="lose" selected>Похудение</option>
-          <option value="maintain">Поддержание веса</option>
-          <option value="gain">Набор массы</option>
-        </select>
-      </label>
+      <label>Активность<select id="userActivity">
+        <option value="1.2">Минимальная</option>
+        <option value="1.375">Лёгкая (1–3 трен/нед)</option>
+        <option value="1.55" selected>Средняя (3–5 трен/нед)</option>
+        <option value="1.725">Высокая (6–7 трен/нед)</option>
+        <option value="1.9">Очень высокая</option>
+      </select></label>
+      <label>Цель<select id="userGoal">
+        <option value="lose" selected>Похудение</option>
+        <option value="maintain">Поддержание веса</option>
+        <option value="gain">Набор массы</option>
+      </select></label>
       <div class="divider"><span>оформление</span></div>
-      <label>Тема
-        <select id="themeSelect">
-          <option value="dark">🌙 Тёмная</option>
-          <option value="light">☀️ Светлая</option>
-          <option value="pink">🌸 Розовая</option>
-          <option value="auto">📱 Системная</option>
-        </select>
-      </label>
-      <label class="checkbox-label">
-        <input type="checkbox" id="notificationsEnabled">
-        <span>🔔 Напоминания (вода, еда, взвешивание)</span>
-      </label>
+      <label>Тема<select id="themeSelect">
+        <option value="dark">🌙 Тёмная</option>
+        <option value="light">☀️ Светлая</option>
+        <option value="pink">🌸 Розовая</option>
+        <option value="auto">📱 Системная</option>
+      </select></label>
+      <label class="checkbox-label"><input type="checkbox" id="notificationsEnabled"><span>🔔 Напоминания</span></label>
       <div class="divider"><span>целевые значения</span></div>
-      <label class="checkbox-label">
-        <input type="checkbox" id="manualNorms">
-        <span>Задать нормы вручную</span>
-      </label>
+      <label class="checkbox-label"><input type="checkbox" id="manualNorms"><span>Задать нормы вручную</span></label>
       <div id="manualNormsBlock" class="hidden">
         <div class="settings-row">
-          <label>Ккал <input type="number" id="normCalories" placeholder="2000" inputmode="numeric"></label>
-          <label>Белки (г) <input type="number" id="normProtein" placeholder="150" inputmode="numeric"></label>
+          <label>Ккал<input type="number" id="normCalories" placeholder="2000" inputmode="numeric"></label>
+          <label>Белки (г)<input type="number" id="normProtein" placeholder="150" inputmode="numeric"></label>
         </div>
         <div class="settings-row">
-          <label>Жиры (г) <input type="number" id="normFat" placeholder="60" inputmode="numeric"></label>
-          <label>Углеводы (г) <input type="number" id="normCarbs" placeholder="200" inputmode="numeric"></label>
+          <label>Жиры (г)<input type="number" id="normFat" placeholder="60" inputmode="numeric"></label>
+          <label>Углеводы (г)<input type="number" id="normCarbs" placeholder="200" inputmode="numeric"></label>
         </div>
       </div>
       <div id="autoNormsPreview" class="norms-preview">
@@ -191,7 +155,7 @@
   </div>
 </div>
 
-<!-- ========== ИИ-ТРЕНЕР ========== -->
+<!-- ИИ-ТРЕНЕР -->
 <div id="coachModal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
@@ -200,9 +164,7 @@
     </div>
     <div class="modal-body coach-body">
       <div id="coachMessages" class="coach-messages">
-        <div class="coach-msg bot">
-          <div class="coach-msg-content">Привет! Я твой личный ИИ-тренер. Спроси меня о питании, тренировках или попроси совет по сегодняшнему дню. 💪</div>
-        </div>
+        <div class="coach-msg bot"><div class="coach-msg-content">Привет! Я твой личный ИИ-тренер. Спроси меня о питании, тренировках или попроси совет. 💪</div></div>
       </div>
       <div class="coach-quick">
         <button class="quick-chip" data-prompt="Что съесть на ужин, чтобы добрать белок?">🥩 Что съесть для белка?</button>
@@ -218,7 +180,7 @@
   </div>
 </div>
 
-<!-- ========== СКАНЕР ШТРИХ-КОДА ========== -->
+<!-- СКАНЕР -->
 <div id="scannerModal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
@@ -233,7 +195,7 @@
   </div>
 </div>
 
-<!-- ========== РЕЦЕПТЫ ========== -->
+<!-- РЕЦЕПТЫ -->
 <div id="recipesModal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
@@ -252,14 +214,12 @@
         <button id="saveRecipeBtn" class="btn-primary full">➕ Сохранить рецепт</button>
       </div>
       <div class="divider"><span>сохранённые</span></div>
-      <div id="recipesList" class="recipes-list">
-        <p class="empty">Рецептов пока нет</p>
-      </div>
+      <div id="recipesList" class="recipes-list"><p class="empty">Рецептов пока нет</p></div>
     </div>
   </div>
 </div>
 
-<!-- ========== ИНТЕРВАЛЬНОЕ ГОЛОДАНИЕ ========== -->
+<!-- ГОЛОДАНИЕ -->
 <div id="fastingModal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
@@ -294,7 +254,7 @@
   </div>
 </div>
 
-<!-- ========== ОБРАТНАЯ СВЯЗЬ ========== -->
+<!-- ФИДБЭК -->
 <div id="feedbackModal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
@@ -307,13 +267,42 @@
         <p>Анализируем приём пищи...</p>
       </div>
     </div>
-    <div class="modal-actions">
-      <button id="feedbackClose" class="btn-primary full">Понятно</button>
+    <div class="modal-actions"><button id="feedbackClose" class="btn-primary full">Понятно</button></div>
+  </div>
+</div>
+
+<!-- НЕДЕЛЬНЫЙ ОТЧЁТ -->
+<div id="weeklyModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📊 Итоги недели</h2>
+      <button class="modal-close" data-close="weeklyModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="weeklyContent" class="weekly-content">
+        <div class="spinner"></div>
+        <p>Анализируем вашу неделю...</p>
+      </div>
+    </div>
+    <div class="modal-actions"><button id="weeklyClose" class="btn-primary full">Понятно</button></div>
+  </div>
+</div>
+
+<!-- ФОТО ПРОГРЕССА (просмотр) -->
+<div id="photoViewerModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="photoViewerTitle">Фото</h2>
+      <button class="modal-close" data-close="photoViewerModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <img id="photoViewerImg" class="photo-viewer-img" alt="">
+      <div id="photoViewerInfo" class="photo-viewer-info"></div>
     </div>
   </div>
 </div>
 
-<!-- ========== TABS ========== -->
+<!-- TABS -->
 <nav class="tabs">
   <button class="tab active" data-tab="dashboard"><span class="tab-icon">🏠</span><span class="tab-text">Обзор</span></button>
   <button class="tab" data-tab="diary"><span class="tab-icon">🍎</span><span class="tab-text">Дневник</span></button>
@@ -345,6 +334,30 @@
       <span class="motivation-text" id="motivationText">Сегодня — отличный день, чтобы начать!</span>
     </div>
 
+    <!-- ПРОГНОЗ ДОСТИЖЕНИЯ ЦЕЛИ -->
+    <div class="card forecast-card" id="forecastCard">
+      <div class="card-header">
+        <h3>🎯 Прогноз цели</h3>
+        <span class="badge" id="forecastBadge">—</span>
+      </div>
+      <div class="forecast-layout">
+        <div class="forecast-icon" id="forecastIcon">📈</div>
+        <div class="forecast-info">
+          <div class="forecast-date" id="forecastDate">Недостаточно данных</div>
+          <div class="forecast-detail" id="forecastDetail">Нужно минимум 2 замера веса</div>
+        </div>
+      </div>
+      <div class="forecast-progress">
+        <div class="forecast-bar">
+          <div class="forecast-bar-fill" id="forecastBarFill"></div>
+        </div>
+        <div class="forecast-labels">
+          <span id="forecastFrom">— кг</span>
+          <span id="forecastTo">— кг</span>
+        </div>
+      </div>
+    </div>
+
     <div class="streak-card" id="streakCard">
       <div class="streak-flame">🔥</div>
       <div class="streak-info">
@@ -371,14 +384,8 @@
         <div class="calorie-ring">
           <svg viewBox="0 0 120 120">
             <defs>
-              <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#6ee7b7"/>
-                <stop offset="100%" stop-color="#38bdf8"/>
-              </linearGradient>
-              <linearGradient id="ringGradOver" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#fbbf24"/>
-                <stop offset="100%" stop-color="#f87171"/>
-              </linearGradient>
+              <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6ee7b7"/><stop offset="100%" stop-color="#38bdf8"/></linearGradient>
+              <linearGradient id="ringGradOver" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f87171"/></linearGradient>
             </defs>
             <circle class="ring-bg" cx="60" cy="60" r="50"/>
             <circle id="calorieRing" class="ring-fg" cx="60" cy="60" r="50" stroke="url(#ringGrad)" stroke-dasharray="314" stroke-dashoffset="314"/>
@@ -396,14 +403,17 @@
       </div>
     </div>
 
+    <div class="card">
+      <h3>Приёмы пищи сегодня</h3>
+      <div class="meal-breakdown" id="mealBreakdown"></div>
+    </div>
+
     <div class="card water-card">
       <div class="card-header">
         <h3>💧 Вода</h3>
         <span class="badge" id="waterLabel">0 / 2000 мл</span>
       </div>
-      <div class="water-bar">
-        <div class="water-bar-fill" id="waterBarFill"></div>
-      </div>
+      <div class="water-bar"><div class="water-bar-fill" id="waterBarFill"></div></div>
       <div class="water-glasses" id="waterGlasses"></div>
       <div class="water-actions">
         <button class="water-btn" data-ml="250">+250 мл</button>
@@ -415,55 +425,45 @@
     <div class="card">
       <h3>Макросы дня</h3>
       <div class="macro-item">
-        <div class="macro-head">
-          <span class="macro-icon">🥩</span>
-          <span class="macro-name">Белки</span>
-          <span class="macro-numbers"><strong id="proteinNow">0</strong> / <span id="proteinGoal">—</span> г</span>
-        </div>
+        <div class="macro-head"><span class="macro-icon">🥩</span><span class="macro-name">Белки</span><span class="macro-numbers"><strong id="proteinNow">0</strong> / <span id="proteinGoal">—</span> г</span></div>
         <div class="bar"><div class="bar-fill protein" id="proteinBar"></div></div>
         <div class="macro-hint" id="proteinHint">—</div>
       </div>
       <div class="macro-item">
-        <div class="macro-head">
-          <span class="macro-icon">🥑</span>
-          <span class="macro-name">Жиры</span>
-          <span class="macro-numbers"><strong id="fatNow">0</strong> / <span id="fatGoal">—</span> г</span>
-        </div>
+        <div class="macro-head"><span class="macro-icon">🥑</span><span class="macro-name">Жиры</span><span class="macro-numbers"><strong id="fatNow">0</strong> / <span id="fatGoal">—</span> г</span></div>
         <div class="bar"><div class="bar-fill fat" id="fatBar"></div></div>
         <div class="macro-hint" id="fatHint">—</div>
       </div>
       <div class="macro-item">
-        <div class="macro-head">
-          <span class="macro-icon">🍞</span>
-          <span class="macro-name">Углеводы</span>
-          <span class="macro-numbers"><strong id="carbsNow">0</strong> / <span id="carbsGoal">—</span> г</span>
-        </div>
+        <div class="macro-head"><span class="macro-icon">🍞</span><span class="macro-name">Углеводы</span><span class="macro-numbers"><strong id="carbsNow">0</strong> / <span id="carbsGoal">—</span> г</span></div>
         <div class="bar"><div class="bar-fill carbs" id="carbsBar"></div></div>
         <div class="macro-hint" id="carbsHint">—</div>
       </div>
     </div>
 
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">⚖️</div>
-        <div class="stat-value" id="statBMI">—</div>
-        <div class="stat-label">ИМТ</div>
+      <div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-value" id="statBMI">—</div><div class="stat-label">ИМТ</div></div>
+      <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-value" id="statRemaining">—</div><div class="stat-label">кг до цели</div></div>
+      <div class="stat-card"><div class="stat-icon">🍽️</div><div class="stat-value" id="statMeals">0</div><div class="stat-label">приёмов</div></div>
+      <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" id="statCalories">0</div><div class="stat-label">ккал</div></div>
+    </div>
+
+    <div class="card bodyfat-card" id="bodyfatCard">
+      <div class="card-header">
+        <h3>💪 Состав тела</h3>
+        <span class="badge" id="bodyfatBadge">—</span>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon">🎯</div>
-        <div class="stat-value" id="statRemaining">—</div>
-        <div class="stat-label">кг до цели</div>
+      <div class="bodyfat-layout">
+        <div class="bodyfat-value">
+          <span id="bodyfatCurrent">—</span>
+          <span class="bodyfat-unit">%</span>
+        </div>
+        <div class="bodyfat-info">
+          <div class="bodyfat-change" id="bodyfatChange">Нет данных</div>
+          <div class="bodyfat-range" id="bodyfatRange"></div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon">🍽️</div>
-        <div class="stat-value" id="statMeals">0</div>
-        <div class="stat-label">приёмов</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">🔥</div>
-        <div class="stat-value" id="statCalories">0</div>
-        <div class="stat-label">ккал</div>
-      </div>
+      <div class="bodyfat-hint" id="bodyfatHint"></div>
     </div>
 
     <div class="card">
@@ -475,9 +475,7 @@
 
     <div class="card">
       <h3>Последние приёмы пищи</h3>
-      <div id="recentMeals" class="recent-meals">
-        <p class="empty">Пока ничего не добавлено</p>
-      </div>
+      <div id="recentMeals" class="recent-meals"><p class="empty">Пока ничего не добавлено</p></div>
     </div>
   </section>
 
@@ -485,7 +483,6 @@
   <section id="diary" class="tab-panel">
     <div class="card">
       <h3>Добавить приём пищи</h3>
-
       <div class="upload-area" id="uploadArea">
         <input type="file" id="fileInput" accept="image/*" hidden>
         <div class="upload-placeholder" id="uploadPlaceholder">
@@ -495,15 +492,11 @@
         </div>
         <img id="preview" class="hidden" alt="Превью">
       </div>
-
       <button id="openScanner" class="btn-secondary full">📷 Сканировать штрих-код</button>
-
       <div class="divider"><span>или введите вручную</span></div>
-
       <label class="field-block">Название блюда
         <input type="text" id="mealName" placeholder="Например: гречка с курицей" autocomplete="off">
       </label>
-
       <div class="settings-row">
         <label>Тип приёма
           <select id="mealType">
@@ -513,21 +506,16 @@
             <option value="Перекус">Перекус</option>
           </select>
         </label>
-        <label>Порция (г)
-          <input type="number" id="portion" placeholder="100" min="1" inputmode="numeric">
-        </label>
+        <label>Порция (г)<input type="number" id="portion" placeholder="100" min="1" inputmode="numeric"></label>
       </div>
-
       <div class="macro-grid">
         <label>Ккал <input type="number" id="mCalories" placeholder="0" inputmode="numeric"></label>
         <label>Белки <input type="number" id="mProtein" placeholder="0" inputmode="numeric"></label>
         <label>Жиры <input type="number" id="mFat" placeholder="0" inputmode="numeric"></label>
         <label>Углеводы <input type="number" id="mCarbs" placeholder="0" inputmode="numeric"></label>
       </div>
-
       <button id="analyzeBtn" class="btn-primary full">🤖 Рассчитать с ИИ</button>
       <button id="addMealBtn" class="btn-secondary full">➕ Добавить без ИИ</button>
-
       <div id="aiStatus" class="ai-status hidden"></div>
     </div>
 
@@ -536,14 +524,12 @@
         <h3>Дневник за сегодня</h3>
         <span id="todayTotal" class="badge">0 ккал</span>
       </div>
-      <div id="mealList" class="meal-list">
-        <p class="empty">Ещё нет записей</p>
-      </div>
+      <div id="mealList" class="meal-list"><p class="empty">Ещё нет записей</p></div>
     </div>
 
     <div class="card">
       <h3>🍳 Рецепты</h3>
-      <p class="hint">Сохраняйте любимые блюда и добавляйте их в один клик</p>
+      <p class="hint">Сохраняйте любимые блюда</p>
       <button id="openRecipes" class="btn-secondary full">Открыть базу рецептов</button>
     </div>
 
@@ -559,6 +545,11 @@
     <div class="card">
       <h3>Записать вес и объёмы</h3>
       <p class="hint">Заполни хотя бы вес — объёмы опциональны</p>
+
+      <label class="field-block">Процент жира (%)
+        <input type="number" step="0.1" id="bBodyFat" placeholder="Например: 22.5" inputmode="decimal">
+      </label>
+
       <div class="macro-grid">
         <label>Вес (кг) <input type="number" step="0.1" id="bWeight" placeholder="70.5" inputmode="decimal"></label>
         <label>Грудь (см) <input type="number" step="0.1" id="bChest" placeholder="—" inputmode="decimal"></label>
@@ -572,8 +563,20 @@
 
     <div class="card">
       <h3>История измерений</h3>
-      <div id="bodyHistory" class="body-history">
-        <p class="empty">Нет данных</p>
+      <div id="bodyHistory" class="body-history"><p class="empty">Нет данных</p></div>
+    </div>
+
+    <!-- ФОТО ПРОГРЕССА -->
+    <div class="card">
+      <div class="card-header">
+        <h3>📸 Фото прогресса</h3>
+        <span class="badge" id="photosCount">0</span>
+      </div>
+      <p class="hint">Делайте фото раз в 1–2 недели в одинаковых условиях (свет, поза). Сравнивайте — цифры на весах не всегда показывают реальные изменения.</p>
+      <button id="addPhotoBtn" class="btn-primary full">➕ Добавить фото</button>
+      <input type="file" id="photoInput" accept="image/*" hidden>
+      <div class="photo-gallery" id="photoGallery">
+        <p class="empty">Фото пока нет</p>
       </div>
     </div>
   </section>
@@ -592,6 +595,33 @@
       <h3>Изменение объёмов</h3>
       <canvas id="measureChart" height="180"></canvas>
     </div>
+
+    <!-- КАЛЕНДАРЬ-ХИТМАП -->
+    <div class="card">
+      <h3>🔥 Активность за 12 недель</h3>
+      <p class="hint">Чем ярче клетка — тем больше калорий записано в дневнике за день</p>
+      <div class="heatmap-wrap">
+        <div class="heatmap-months" id="heatmapMonths"></div>
+        <div class="heatmap" id="heatmap"></div>
+        <div class="heatmap-legend">
+          <span>Меньше</span>
+          <span class="hm-legend-cell level-0"></span>
+          <span class="hm-legend-cell level-1"></span>
+          <span class="hm-legend-cell level-2"></span>
+          <span class="hm-legend-cell level-3"></span>
+          <span class="hm-legend-cell level-4"></span>
+          <span>Больше</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- НЕДЕЛЬНЫЙ ОТЧЁТ -->
+    <div class="card weekly-card">
+      <h3>📊 Итоги недели</h3>
+      <p class="hint">ИИ проанализирует вашу неделю: что получилось, что не получилось, и даст один совет</p>
+      <button id="weeklyReportBtn" class="btn-primary full">🤖 Сгенерировать отчёт</button>
+    </div>
+
     <div class="card">
       <h3>⚡ Челленджи</h3>
       <p class="hint">Выберите челлендж и держитесь его до конца</p>
@@ -614,11 +644,8 @@
           <div class="level-sub" id="levelSub">0 / 100 XP</div>
         </div>
       </div>
-      <div class="bar">
-        <div class="bar-fill level-fill" id="levelBar"></div>
-      </div>
+      <div class="bar"><div class="bar-fill level-fill" id="levelBar"></div></div>
     </div>
-
     <div class="card">
       <div class="card-header">
         <h3>🏅 Достижения</h3>
@@ -626,36 +653,18 @@
       </div>
       <div class="achievements-grid" id="achievementsGrid"></div>
     </div>
-
     <div class="card">
       <h3>Статистика</h3>
       <div class="profile-stats">
-        <div class="profile-stat">
-          <div class="profile-stat-value" id="totalMeals">0</div>
-          <div class="profile-stat-label">приёмов всего</div>
-        </div>
-        <div class="profile-stat">
-          <div class="profile-stat-value" id="totalDays">0</div>
-          <div class="profile-stat-label">дней с записями</div>
-        </div>
-        <div class="profile-stat">
-          <div class="profile-stat-value" id="totalLost">0</div>
-          <div class="profile-stat-label">кг сброшено</div>
-        </div>
-        <div class="profile-stat">
-          <div class="profile-stat-value" id="totalWater">0</div>
-          <div class="profile-stat-label">литров воды</div>
-        </div>
+        <div class="profile-stat"><div class="profile-stat-value" id="totalMeals">0</div><div class="profile-stat-label">приёмов всего</div></div>
+        <div class="profile-stat"><div class="profile-stat-value" id="totalDays">0</div><div class="profile-stat-label">дней с записями</div></div>
+        <div class="profile-stat"><div class="profile-stat-value" id="totalLost">0</div><div class="profile-stat-label">кг сброшено</div></div>
+        <div class="profile-stat"><div class="profile-stat-value" id="totalWater">0</div><div class="profile-stat-label">литров воды</div></div>
       </div>
     </div>
-
     <div class="card">
       <h3>О приложении</h3>
-      <p class="hint">
-        FitTrack — бесплатное приложение для отслеживания питания и прогресса.
-        Все данные хранятся только в вашем браузере. ИИ работает через Puter.js.
-        Работает без VPN и регистрации.
-      </p>
+      <p class="hint">FitTrack — бесплатное приложение для отслеживания питания и прогресса. Все данные хранятся только в вашем браузере. ИИ работает через Puter.js. Работает без VPN и регистрации.</p>
       <button id="openSettings2" class="btn-secondary full">Открыть настройки</button>
     </div>
   </section>
