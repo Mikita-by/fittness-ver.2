@@ -3,7 +3,8 @@ const KEYS = {
   meals: 'ft_meals', body: 'ft_body', settings: 'ft_settings',
   water: 'ft_water', streak: 'ft_streak', achievements: 'ft_ach',
   recipes: 'ft_recipes', fasting: 'ft_fasting', coach: 'ft_coach',
-  challenges: 'ft_challenges', mission: 'ft_mission', steps: 'ft_steps'
+  challenges: 'ft_challenges', mission: 'ft_mission', steps: 'ft_steps',
+  photos: 'ft_photos', weekly: 'ft_weekly'
 };
 
 const load = (k, def) => {
@@ -25,12 +26,15 @@ let state = {
   challenges: load(KEYS.challenges, { active: null, start: null }),
   mission: load(KEYS.mission, { date: null, text: null }),
   steps: load(KEYS.steps, {}),
+  photos: load(KEYS.photos, []),
+  weekly: load(KEYS.weekly, { date: null, data: null }),
   currentImage: null,
   charts: {}
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+const fmtDateLong = (d) => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 const esc = (s) => { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
 const $ = (id) => document.getElementById(id);
 
@@ -55,8 +59,9 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     $(tab.dataset.tab).classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (tab.dataset.tab === 'progress') renderCharts();
+    if (tab.dataset.tab === 'progress') { renderCharts(); renderHeatmap(); }
     if (tab.dataset.tab === 'profile') renderProfile();
+    if (tab.dataset.tab === 'body') renderPhotos();
   });
 });
 
@@ -252,7 +257,8 @@ $('exportBtn').addEventListener('click', () => {
   const data = {
     meals: state.meals, body: state.body, settings: state.settings,
     water: state.water, streak: state.streak, achievements: state.achievements,
-    recipes: state.recipes, coach: state.coach, challenges: state.challenges, steps: state.steps,
+    recipes: state.recipes, coach: state.coach, challenges: state.challenges,
+    steps: state.steps, photos: state.photos,
     exportedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -283,6 +289,7 @@ $('importInput').addEventListener('change', (e) => {
       save(KEYS.recipes, state.recipes);
       save(KEYS.coach, state.coach);
       save(KEYS.challenges, state.challenges);
+      save(KEYS.photos, state.photos);
       applyTheme(state.settings.theme || 'dark');
       renderAll();
       alert('Импорт успешно завершён!');
@@ -467,7 +474,8 @@ function getXP() {
   return state.meals.length * 5
     + state.body.length * 10
     + state.achievements.length * 25
-    + (state.streak.best || 0) * 10;
+    + (state.streak.best || 0) * 10
+    + state.photos.length * 15;
 }
 
 function renderLevel() {
@@ -509,7 +517,6 @@ fileInput.addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-// ✅ Активация кнопки при вводе названия или загрузке фото
 function updateAnalyzeBtn() {
   const hasName = $('mealName').value.trim().length > 0;
   const hasImage = !!state.currentImage;
@@ -539,7 +546,6 @@ async function askPuter(prompt, image = null) {
   const args = [prompt];
   if (image) args.push(image);
   args.push({ model: 'gpt-5-nano' });
-
   const response = await puter.ai.chat(...args);
   let text = '';
   if (typeof response === 'string') text = response;
@@ -560,7 +566,7 @@ $('analyzeBtn').addEventListener('click', async () => {
     return;
   }
   if (typeof puter === 'undefined' || !puter.ai) {
-    showAIStatus('❌ ИИ-модуль не загрузился. Проверьте интернет и обновите страницу.', 'error');
+    showAIStatus('❌ ИИ-модуль не загрузился.', 'error');
     return;
   }
 
@@ -619,7 +625,6 @@ $('addMealBtn').addEventListener('click', () => {
   state.meals.unshift(meal);
   save(KEYS.meals, state.meals);
 
-  // Сброс формы
   $('mealName').value = '';
   $('mCalories').value = '';
   $('mProtein').value = '';
@@ -677,7 +682,7 @@ function renderMeals() {
     : '<p class="empty">Ещё нет записей на сегодня</p>';
 }
 
-// ==================== ИИ-ФИДБЭК ПОСЛЕ ЕДЫ ====================
+// ==================== ИИ-ФИДБЭК ====================
 async function showAIFeedback(meal) {
   $('feedbackModal').classList.remove('hidden');
   $('feedbackContent').innerHTML = '<div class="spinner"></div><p>Анализируем приём пищи...</p>';
@@ -708,6 +713,7 @@ $('saveBodyBtn').addEventListener('click', () => {
   if (!weight) { alert('Введите вес'); return; }
   const entry = {
     id: Date.now(), date: new Date().toISOString(), weight,
+    bodyFat: +$('bBodyFat').value || null,
     chest: +$('bChest').value || null,
     waist: +$('bWaist').value || null,
     hips: +$('bHips').value || null,
@@ -716,7 +722,7 @@ $('saveBodyBtn').addEventListener('click', () => {
   };
   state.body.unshift(entry);
   save(KEYS.body, state.body);
-  ['bWeight','bChest','bWaist','bHips','bArm','bLeg'].forEach(id => $(id).value = '');
+  ['bWeight','bBodyFat','bChest','bWaist','bHips','bArm','bLeg'].forEach(id => $(id).value = '');
   state.settings.weight = weight;
   save(KEYS.settings, state.settings);
   checkAchievements();
@@ -736,6 +742,7 @@ function renderBodyHistory() {
   if (!state.body.length) { c.innerHTML = '<p class="empty">Нет данных</p>'; return; }
   c.innerHTML = state.body.map(b => {
     const m = [];
+    if (b.bodyFat) m.push(`💪 Жир ${b.bodyFat}%`);
     if (b.chest) m.push(`Грудь ${b.chest}`);
     if (b.waist) m.push(`Талия ${b.waist}`);
     if (b.hips) m.push(`Бёдра ${b.hips}`);
@@ -750,6 +757,162 @@ function renderBodyHistory() {
       <button class="body-entry-delete" onclick="deleteBodyEntry(${b.id})">✕</button>
     </div>`;
   }).join('');
+}
+
+// ==================== СОСТАВ ТЕЛА ====================
+function renderBodyFat() {
+  const card = $('bodyfatCard');
+  if (!card) return;
+  const currentEl = $('bodyfatCurrent');
+  const badgeEl = $('bodyfatBadge');
+  const changeEl = $('bodyfatChange');
+  const rangeEl = $('bodyfatRange');
+  const hintEl = $('bodyfatHint');
+
+  const withBF = state.body.filter(b => b.bodyFat != null && b.bodyFat > 0);
+  const current = withBF[0]?.bodyFat ?? null;
+  const first = withBF[withBF.length - 1]?.bodyFat ?? null;
+
+  if (current == null) {
+    currentEl.textContent = '—';
+    badgeEl.textContent = '—';
+    badgeEl.className = 'badge empty';
+    changeEl.textContent = 'Нет данных — добавьте замер в разделе «Тело»';
+    rangeEl.textContent = '';
+    hintEl.textContent = '';
+    return;
+  }
+
+  currentEl.textContent = current.toFixed(1);
+  badgeEl.textContent = 'текущий';
+
+  if (first != null && withBF.length >= 2) {
+    const delta = current - first;
+    const arrow = delta > 0.05 ? '↑' : delta < -0.05 ? '↓' : '=';
+    const sign = delta > 0 ? '+' : '';
+    const cls = delta > 0.05 ? 'up' : delta < -0.05 ? 'down' : 'same';
+    changeEl.innerHTML = `<span class="delta ${cls}">${arrow} ${sign}${delta.toFixed(1)}%</span> с первого замера (${first.toFixed(1)}%)`;
+  } else {
+    changeEl.textContent = 'Первый замер — динамику будет видно после следующего';
+  }
+
+  const sex = state.settings.sex || 'male';
+  let category = '—', catClass = 'empty', range = '';
+
+  if (sex === 'female') {
+    range = 'Норма для женщин: 18–28%';
+    if (current < 18)      { category = 'Низкий';     catClass = 'low';  }
+    else if (current < 28) { category = 'Норма';      catClass = 'ok';   }
+    else if (current < 32) { category = 'Выше нормы'; catClass = 'warn'; }
+    else                   { category = 'Высокий';    catClass = 'over'; }
+  } else {
+    range = 'Норма для мужчин: 10–20%';
+    if (current < 10)      { category = 'Низкий';     catClass = 'low';  }
+    else if (current < 20) { category = 'Норма';      catClass = 'ok';   }
+    else if (current < 25) { category = 'Выше нормы'; catClass = 'warn'; }
+    else                   { category = 'Высокий';    catClass = 'over'; }
+  }
+
+  badgeEl.textContent = category;
+  badgeEl.className = 'badge ' + catClass;
+  rangeEl.textContent = range;
+
+  if (catClass === 'ok') hintEl.textContent = '💚 Отличный показатель!';
+  else if (catClass === 'low') hintEl.textContent = '⚠️ Слишком низкий процент жира может вредить здоровью.';
+  else if (catClass === 'warn') hintEl.textContent = '💪 Небольшой избыток — добавьте силовые тренировки.';
+  else if (catClass === 'over') hintEl.textContent = '🎯 Дефицит калорий + тренировки дадут результат.';
+  else hintEl.textContent = '';
+}
+
+// ==================== ПРОГНОЗ ЦЕЛИ ====================
+function renderForecast() {
+  const card = $('forecastCard');
+  if (!card) return;
+
+  const iconEl = $('forecastIcon');
+  const dateEl = $('forecastDate');
+  const detailEl = $('forecastDetail');
+  const badgeEl = $('forecastBadge');
+  const barFill = $('forecastBarFill');
+  const fromEl = $('forecastFrom');
+  const toEl = $('forecastTo');
+
+  const target = state.settings.target;
+  const bodySorted = [...state.body].reverse();
+
+  if (!target || bodySorted.length < 2) {
+    iconEl.textContent = '📈';
+    dateEl.textContent = 'Недостаточно данных';
+    detailEl.textContent = 'Нужно минимум 2 замера веса и цель в настройках';
+    badgeEl.textContent = '—';
+    badgeEl.className = 'badge empty';
+    barFill.style.width = '0%';
+    fromEl.textContent = '— кг';
+    toEl.textContent = `${target || '—'} кг`;
+    return;
+  }
+
+  const current = bodySorted[bodySorted.length - 1].weight;
+  const firstWeight = bodySorted[0].weight;
+  const firstDate = new Date(bodySorted[0].date);
+  const daysElapsed = Math.max(1, Math.floor((Date.now() - firstDate.getTime()) / 86400000));
+  const lost = firstWeight - current;
+  const totalToLose = firstWeight - target;
+  const remaining = current - target;
+
+  // Прогресс от старта к цели
+  const progressPct = totalToLose > 0
+    ? Math.min(100, Math.max(0, (lost / totalToLose) * 100))
+    : 100;
+  barFill.style.width = progressPct + '%';
+  fromEl.textContent = `${firstWeight} кг`;
+  toEl.textContent = `${target} кг`;
+
+  if (remaining <= 0) {
+    iconEl.textContent = '🎉';
+    dateEl.textContent = 'Цель достигнута!';
+    detailEl.textContent = `Поздравляем! Текущий вес ${current} кг ≤ цели ${target} кг`;
+    badgeEl.textContent = 'Готово';
+    badgeEl.className = 'badge ahead';
+    return;
+  }
+
+  // Темп снижения кг/неделю (по последним 4 замерам или по всем)
+  const recent = bodySorted.slice(-Math.min(5, bodySorted.length));
+  const recentFirst = recent[0];
+  const recentLast = recent[recent.length - 1];
+  const daysRecent = Math.max(1, Math.floor((new Date(recentLast.date) - new Date(recentFirst.date)) / 86400000));
+  const lostRecent = recentFirst.weight - recentLast.weight;
+  const kgPerDay = lostRecent / daysRecent;
+  const kgPerWeek = kgPerDay * 7;
+
+  if (lostRecent <= 0.1) {
+    // Вес не снижается
+    iconEl.textContent = '⚠️';
+    dateEl.textContent = 'Вес стоит на месте';
+    detailEl.textContent = 'За последние замеры снижения нет. Проверьте дефицит калорий и активность.';
+    badgeEl.textContent = 'Стоп';
+    badgeEl.className = 'badge stalled';
+    return;
+  }
+
+  const daysToGoal = Math.ceil(remaining / kgPerDay);
+  const goalDate = new Date(Date.now() + daysToGoal * 86400000);
+
+  iconEl.textContent = '📉';
+  dateEl.textContent = fmtDateLong(goalDate);
+  detailEl.textContent = `При текущем темпе ${kgPerWeek.toFixed(2)} кг/нед. Осталось ${remaining.toFixed(1)} кг.`;
+
+  // Оценка темпа
+  const bmiNow = current / Math.pow((state.settings.height || 170) / 100, 2);
+  let pace = 'on-track';
+  let paceText = 'В темпе';
+  if (kgPerWeek > 1.2) { pace = 'ahead'; paceText = 'Быстро!'; }
+  else if (kgPerWeek > 0.8) { pace = 'ahead'; paceText = 'Хороший темп'; }
+  else if (kgPerWeek > 0.3) { pace = 'on-track'; paceText = 'В темпе'; }
+  else { pace = 'behind'; paceText = 'Медленно'; }
+  badgeEl.textContent = paceText;
+  badgeEl.className = 'badge ' + pace;
 }
 
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
@@ -831,6 +994,8 @@ function renderDashboard() {
   renderWater();
   renderStreak();
   renderMission();
+  renderMealBreakdown();
+  renderForecast();
   renderRecommendation(totals, norms);
   renderMotivation(totals, norms, meals.length);
 
@@ -907,6 +1072,48 @@ function renderRecommendation(totals, norms) {
   box.innerHTML = items.map(i => `<div class="rec-item"><span class="rec-icon">${i.icon}</span><span class="rec-text">${i.text}</span></div>`).join('');
 }
 
+// Разбивка по приёмам пищи
+function renderMealBreakdown() {
+  const day = today();
+  const meals = state.meals.filter(m => m.date.slice(0, 10) === day);
+  const norms = getNorms();
+
+  const TYPES = [
+    { name: 'Завтрак', icon: '🌅', cls: 'breakfast', share: 0.25 },
+    { name: 'Обед',    icon: '☀️', cls: 'lunch',     share: 0.35 },
+    { name: 'Ужин',    icon: '🌙', cls: 'dinner',    share: 0.25 },
+    { name: 'Перекус', icon: '🍎', cls: 'snack',     share: 0.15 }
+  ];
+
+  const el = $('mealBreakdown');
+  if (!el) return;
+
+  el.innerHTML = TYPES.map(t => {
+    const kcal = Math.round(
+      meals.filter(m => m.type === t.name).reduce((s, m) => s + (m.calories || 0), 0)
+    );
+    const norm = norms ? Math.round(norms.calories * t.share) : null;
+    const pct = norm ? Math.min(100, (kcal / norm) * 100) : 0;
+    const over = norm && kcal > norm;
+
+    return `
+      <div class="meal-type-card">
+        <div class="meal-type-head">
+          <span class="meal-type-icon">${t.icon}</span>
+          <span class="meal-type-name">${t.name}</span>
+        </div>
+        <div class="meal-type-values">
+          <span class="now">${kcal}</span>
+          <span class="goal">/ ${norm !== null ? norm : '—'} ккал</span>
+        </div>
+        <div class="meal-type-bar">
+          <div class="meal-type-bar-fill ${t.cls}${over ? ' over' : ''}" style="width:${pct}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 // ==================== МИССИЯ ДНЯ ====================
 function renderMission() {
   const m = state.mission;
@@ -941,7 +1148,7 @@ $('missionRefresh').addEventListener('click', async () => {
   }
 });
 
-// ==================== СКАНЕР ШТРИХ-КОДА ====================
+// ==================== СКАНЕР ====================
 let codeReader = null;
 $('openScanner').addEventListener('click', startScanner);
 
@@ -956,10 +1163,7 @@ async function startScanner() {
   try {
     codeReader = new ZXing.BrowserMultiFormatReader();
     codeReader.decodeFromVideoDevice(null, 'scannerVideo', (result) => {
-      if (result) {
-        handleBarcode(result.text);
-        stopScanner();
-      }
+      if (result) { handleBarcode(result.text); stopScanner(); }
     });
   } catch (e) {
     $('scannerResult').innerHTML = '❌ Не удалось включить камеру: ' + e.message;
@@ -1341,6 +1545,302 @@ function renderCharts() {
   });
 }
 
+// ==================== ХИТМАП ====================
+function renderHeatmap() {
+  const container = $('heatmap');
+  const monthsEl = $('heatmapMonths');
+  if (!container) return;
+
+  const WEEKS = 12;
+  const totalDays = WEEKS * 7;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  // Начало: N недель назад, с понедельника
+  const start = new Date(now);
+  start.setDate(start.getDate() - (totalDays - 1));
+  const dayOfWeek = (start.getDay() + 6) % 7; // 0=Пн
+  start.setDate(start.getDate() - dayOfWeek);
+
+  // Собираем сумму калорий по дням
+  const kcalByDay = {};
+  state.meals.forEach(m => {
+    const key = m.date.slice(0, 10);
+    kcalByDay[key] = (kcalByDay[key] || 0) + (m.calories || 0);
+  });
+
+  // Уровни: 0 — нет записей, 1-4 — по количеству калорий
+  function getLevel(kcal) {
+    if (!kcal || kcal === 0) return 0;
+    if (kcal < 500) return 1;
+    if (kcal < 1200) return 2;
+    if (kcal < 1800) return 3;
+    return 4;
+  }
+
+  // Строим ячейки
+  let cells = '';
+  const months = [];
+  let lastMonth = -1;
+
+  for (let i = 0; i < WEEKS * 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    const future = d > now;
+    const kcal = kcalByDay[key] || 0;
+    const level = future ? 0 : getLevel(kcal);
+    const cls = future ? 'future' : `level-${level}`;
+    const title = `${d.toLocaleDateString('ru-RU')}${future ? '' : `: ${Math.round(kcal)} ккал`}`;
+    cells += `<div class="hm-cell ${cls}" title="${title}" data-date="${key}"></div>`;
+
+    // Заголовки месяцев (каждое первое число месяца или начало колонки)
+    const m = d.getMonth();
+    if (m !== lastMonth) {
+      months.push({ index: i, label: d.toLocaleDateString('ru-RU', { month: 'short' }) });
+      lastMonth = m;
+    }
+  }
+
+  container.innerHTML = cells;
+
+  // Сетка месяцев
+  if (monthsEl) {
+    monthsEl.innerHTML = months.map(mo =>
+      `<span style="grid-column:${Math.floor(mo.index / 7) + 1}">${mo.label}</span>`
+    ).join('');
+    monthsEl.style.gridTemplateColumns = `repeat(${WEEKS}, 14px)`;
+  }
+
+  // Клик по дню — показать, что съедено
+  container.querySelectorAll('.hm-cell:not(.future)').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const date = cell.dataset.date;
+      const meals = state.meals.filter(m => m.date.slice(0, 10) === date);
+      const total = meals.reduce((s, m) => s + (m.calories || 0), 0);
+      if (!meals.length) {
+        alert(`${new Date(date).toLocaleDateString('ru-RU')}\n\nЗаписей нет`);
+      } else {
+        const list = meals.map(m => `• ${m.name} — ${Math.round(m.calories || 0)} ккал`).join('\n');
+        alert(`${new Date(date).toLocaleDateString('ru-RU')}\n\nВсего: ${Math.round(total)} ккал\n\n${list}`);
+      }
+    });
+  });
+}
+
+// ==================== НЕДЕЛЬНЫЙ ОТЧЁТ ====================
+$('weeklyReportBtn').addEventListener('click', generateWeeklyReport);
+$('weeklyClose').addEventListener('click', () => $('weeklyModal').classList.add('hidden'));
+
+async function generateWeeklyReport() {
+  $('weeklyModal').classList.remove('hidden');
+  $('weeklyContent').innerHTML = '<div class="spinner"></div><p>Анализируем вашу неделю...</p>';
+
+  try {
+    // Собираем данные за 7 дней
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const meals = state.meals.filter(m => m.date.slice(0, 10) === key);
+      const totals = meals.reduce((a, m) => ({
+        calories: a.calories + (m.calories || 0),
+        protein: a.protein + (m.protein || 0),
+        fat: a.fat + (m.fat || 0),
+        carbs: a.carbs + (m.carbs || 0)
+      }), { calories: 0, protein: 0, fat: 0, carbs: 0 });
+      days.push({ date: key, dayName: d.toLocaleDateString('ru-RU', { weekday: 'short' }), meals: meals.length, ...totals });
+    }
+
+    const activeDays = days.filter(d => d.meals > 0);
+    const norms = getNorms();
+    const avgCal = activeDays.length ? Math.round(activeDays.reduce((s, d) => s + d.calories, 0) / activeDays.length) : 0;
+    const avgProt = activeDays.length ? Math.round(activeDays.reduce((s, d) => s + d.protein, 0) / activeDays.length) : 0;
+    const avgFat = activeDays.length ? Math.round(activeDays.reduce((s, d) => s + d.fat, 0) / activeDays.length) : 0;
+    const avgCarbs = activeDays.length ? Math.round(activeDays.reduce((s, d) => s + d.carbs, 0) / activeDays.length) : 0;
+
+    if (activeDays.length < 3) {
+      $('weeklyContent').innerHTML = `
+        <span class="weekly-emoji">📊</span>
+        <div class="weekly-title">Мало данных</div>
+        <p style="text-align:center;color:var(--text-muted)">Записывайте еду хотя бы 3 дня, чтобы ИИ смог проанализировать неделю.</p>
+      `;
+      return;
+    }
+
+    // Средний вес за неделю и его изменение
+    const weightNow = state.body[0]?.weight;
+    const weekAgo = new Date(Date.now() - 7 * 86400000);
+    const weightBefore = state.body.find(b => new Date(b.date) <= weekAgo)?.weight;
+    const weightDelta = (weightNow && weightBefore) ? (weightNow - weightBefore).toFixed(1) : null;
+
+    const prompt = `Ты — дружелюбный нутрициолог. Проанализируй неделю пользователя FitTrack.
+
+Данные:
+Имя: ${state.settings.name || 'Пользователь'}
+Цель: ${state.settings.goal || 'похудение'}
+Норма калорий: ${norms ? Math.round(norms.calories) : '—'} ккал/день
+Норма белка: ${norms ? Math.round(norms.protein) : '—'} г/день
+
+За 7 дней:
+Записей: ${activeDays.length} из 7 дней
+Среднее калорий: ${avgCal} ккал
+Среднее белка: ${avgProt} г
+Среднее жиров: ${avgFat} г
+Среднее углеводов: ${avgCarbs} г
+${weightDelta !== null ? `Изменение веса: ${weightDelta > 0 ? '+' : ''}${weightDelta} кг` : 'Вес не измерялся'}
+
+Ответь ТОЛЬКО JSON без markdown:
+{
+  "emoji": "подходящий эмодзи общий (1 символ)",
+  "title": "короткое название недели (3-5 слов)",
+  "good": "что получилось хорошо (1-2 предложения, конкретно с цифрами)",
+  "bad": "что не получилось / над чем поработать (1-2 предложения, конкретно)",
+  "tip": "один конкретный совет на следующую неделю (1-2 предложения)"
+}`;
+
+    const text = await askPuter(prompt);
+    const data = extractJSON(text);
+
+    state.weekly = { date: today(), data: { ...data, stats: { avgCal, avgProt, avgFat, avgCarbs, activeDays: activeDays.length } } };
+    save(KEYS.weekly, state.weekly);
+
+    $('weeklyContent').innerHTML = `
+      <span class="weekly-emoji">${data.emoji || '📊'}</span>
+      <div class="weekly-title">${esc(data.title || 'Итоги недели')}</div>
+      <div class="weekly-stats">
+        <div class="weekly-stat"><div class="weekly-stat-value">${avgCal}</div><div class="weekly-stat-label">ср. ккал</div></div>
+        <div class="weekly-stat"><div class="weekly-stat-value">${avgProt} г</div><div class="weekly-stat-label">ср. белок</div></div>
+        <div class="weekly-stat"><div class="weekly-stat-value">${activeDays.length}/7</div><div class="weekly-stat-label">дней с записями</div></div>
+        <div class="weekly-stat"><div class="weekly-stat-value">${weightDelta !== null ? (weightDelta > 0 ? '+' : '') + weightDelta : '—'} кг</div><div class="weekly-stat-label">вес</div></div>
+      </div>
+      <div class="weekly-section">
+        <div class="weekly-section-title good">✅ Что получилось</div>
+        <p>${esc(data.good || '')}</p>
+      </div>
+      <div class="weekly-section">
+        <div class="weekly-section-title bad">⚠️ Над чем поработать</div>
+        <p>${esc(data.bad || '')}</p>
+      </div>
+      <div class="weekly-section">
+        <div class="weekly-section-title tip">💡 Совет на неделю</div>
+        <p>${esc(data.tip || '')}</p>
+      </div>
+    `;
+  } catch (e) {
+    console.error('Weekly report error:', e);
+    $('weeklyContent').innerHTML = `
+      <span class="weekly-emoji">❌</span>
+      <div class="weekly-title">Ошибка</div>
+      <p style="text-align:center;color:var(--text-muted)">${esc(e.message || 'Не удалось получить отчёт')}</p>
+    `;
+  }
+}
+
+// ==================== ФОТО ПРОГРЕССА ====================
+const photoInput = $('photoInput');
+$('addPhotoBtn').addEventListener('click', () => photoInput.click());
+
+photoInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 15 * 1024 * 1024) { alert('Фото больше 15 МБ'); return; }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      // Сжимаем до максимум 800px по длинной стороне
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > h && w > MAX) { h = h * MAX / w; w = MAX; }
+      else if (h > w && h > MAX) { w = w * MAX / h; h = MAX; }
+      else if (w === h && w > MAX) { w = h = MAX; }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+
+      state.photos.unshift({
+        id: Date.now(),
+        date: new Date().toISOString(),
+        data: dataUrl
+      });
+      save(KEYS.photos, state.photos);
+      checkAchievements();
+      renderPhotos();
+      photoInput.value = '';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function renderPhotos() {
+  const gallery = $('photoGallery');
+  const counter = $('photosCount');
+  if (!gallery) return;
+
+  if (counter) counter.textContent = state.photos.length;
+
+  if (!state.photos.length) {
+    gallery.innerHTML = '<p class="empty">Фото пока нет</p>';
+    return;
+  }
+
+  gallery.innerHTML = state.photos.map(p => `
+    <div class="photo-thumb" data-id="${p.id}">
+      <img src="${p.data}" alt="">
+      <div class="photo-thumb-date">${fmtDate(p.date)}</div>
+      <button class="photo-thumb-delete" data-delete="${p.id}">✕</button>
+    </div>
+  `).join('');
+
+  gallery.querySelectorAll('.photo-thumb').forEach(thumb => {
+    thumb.addEventListener('click', (e) => {
+      if (e.target.dataset.delete) return;
+      const id = +thumb.dataset.id;
+      const photo = state.photos.find(p => p.id === id);
+      if (photo) openPhotoViewer(photo);
+    });
+  });
+
+  gallery.querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = +btn.dataset.delete;
+      if (!confirm('Удалить это фото?')) return;
+      state.photos = state.photos.filter(p => p.id !== id);
+      save(KEYS.photos, state.photos);
+      renderPhotos();
+    });
+  });
+}
+
+function openPhotoViewer(photo) {
+  $('photoViewerImg').src = photo.data;
+  const d = new Date(photo.date);
+  $('photoViewerTitle').textContent = fmtDateLong(d);
+
+  // Находим вес на эту дату (ближайший по времени)
+  const dayMs = 86400000;
+  const closest = state.body
+    .map(b => ({ ...b, diff: Math.abs(new Date(b.date).getTime() - d.getTime()) }))
+    .filter(b => b.diff < dayMs * 3)
+    .sort((a, b) => a.diff - b.diff)[0];
+
+  if (closest) {
+    $('photoViewerInfo').innerHTML = `⚖️ ${closest.weight} кг${closest.bodyFat ? ` · 💪 ${closest.bodyFat}%` : ''}`;
+  } else {
+    $('photoViewerInfo').textContent = 'Нет данных о весе рядом с этой датой';
+  }
+
+  $('photoViewerModal').classList.remove('hidden');
+}
+
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
   renderLevel();
@@ -1386,7 +1886,9 @@ function renderAll() {
   renderMeals();
   renderBodyHistory();
   renderChallenges();
-  if ($('progress').classList.contains('active')) renderCharts();
+  renderBodyFat();
+  renderPhotos();
+  if ($('progress').classList.contains('active')) { renderCharts(); renderHeatmap(); }
   if ($('profile').classList.contains('active')) renderProfile();
 }
 
